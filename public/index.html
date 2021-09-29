@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Multiplayer Game</title>
+    <link rel="stylesheet" defer href="styles.css">
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="script.js" defer></script>
+
+  </head>
+  <body>
+
+    <div class="center"> 
+      <div id="canvas_con">
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="col chat">
+
+        <form class="row coolimpt" id="nick_form">
+          <input id="nick_input" autocomplete="nickname"> 
+          <button>Change Nickname</button>
+        </form>
+
+        <form class="row coolimpt" id="msg_form">
+          <input id="msg_input" autocomplete="off" > 
+          <button> Send </button>
+        </form>
+
+        <div id="schreib" style="visibility: hidden;" >
+          <label >Typing: </label>
+          <input id="TYPINGUSERS" disabled value="">
+
+        </div>
+        
+        <ul id="msgs">
+
+        </ul>
+
+      </div>
+    </div>
+
+    
+  </body>
+</html>
