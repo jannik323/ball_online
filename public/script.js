@@ -22,6 +22,10 @@ socket.once("users", (USERS)=>{
 socket.on("level",(level)=>{
     loadedlevel = level;
     buildcurrentlevel();
+    setTimeout(()=>{
+        racemanager.setcheckpoints();
+
+    },100)
 })
 
 socket.on('system message', function(msg) {
@@ -89,7 +93,7 @@ class gameobject{
         this.width = width;
         this.height = height;
         this.type = type;
-        this.setcolors();
+        this.settype();
         GAMEOBJECTS.push(this);
     }
   
@@ -97,17 +101,20 @@ class gameobject{
         
     }
   
-    render(){
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = this.opac;
-        ctx.strokeStyle = this.strokecolor;
-        ctx.fillStyle = this.fillcolor;
-        ctx.shadowColor = this.shadowcolor;
-        ctx.strokeRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
-        ctx.fillRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
-        ctx.shadowBlur = 0;
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = 1;
+    render(mode){
+
+        if(mode === this.rendermode){
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = this.opac;
+            ctx.strokeStyle = this.strokecolor;
+            ctx.fillStyle = this.fillcolor;
+            ctx.shadowColor = this.shadowcolor;
+            ctx.strokeRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
+            ctx.fillRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 1;
+        }
   
   
     }
@@ -125,17 +132,40 @@ class gameobject{
       return false;
     }
   
-    setcolors(){
-        if(this.type === "platform"){
+    settype(){
+        this.hascol = true;
+        this.rendermode = "overplayer";
+        this.opac = 1;
+        this.shadowcolor = "black";
+
+        switch(this.type){
+            case "platform":
             this.strokecolor = "black"
             this.fillcolor = "white";
-            this.shadowcolor = "black";
-            this.opac = 1;
-        }else{
+            
+            break;
+
+            case "goal":
+            this.strokecolor = "yellow"
+            this.fillcolor = "yellow";
+            this.hascol = false;
+            this.rendermode = "underplayer";
+            break;
+
+            case "checkpoint":
+            this.strokecolor = "lightblue"
+            this.fillcolor = "lightblue";
+            this.hascol = false;
+            this.rendermode = "underplayer";
+            this.checked = false;
+            break;
+
+            default:
             this.strokecolor = "black"
             this.fillcolor = "pink";
-            this.shadowcolor = "black";
-            this.opac = 1;
+            break;
+
+
         }
     }
   
@@ -161,23 +191,7 @@ class player{
             this.speed = 0;
             this.speeda = 0.04;
             this.color= "black";
-            
-
-            setTimeout(()=>{
-                PLAYERS.forEach(v=>{
-                    if (v.localplayer) return;
-                    if(distance(this.x,v.x,this.y,v.y) < this.size+v.size){
-                        let xrand = randomrange(-80,80)
-                        let yrand = randomrange(-80,80)
-                        this.x = xrand
-                        this.y = yrand
-                        camera.x -= xrand;
-                        camera.y -= yrand;
-    
-                        socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
-                    }
-                })
-            },100)
+            setTimeout(v=>{this.respawn()},100)
 
         }else{
             this.color = "grey";
@@ -244,18 +258,30 @@ class player{
         border.collision(this);
 
         GAMEOBJECTS.forEach(v=>{
-
-            this.x += this.xa;
-            if(v.ballcollision(this.x,this.y,this.size)){
-                this.x -= this.xa;
-                this.xa *=-0.4;
-            }else{this.x -= this.xa}
-
-            this.y += this.ya;
-            if(v.ballcollision(this.x,this.y,this.size)){
-                this.y -= this.ya;
-                this.ya *=-0.4;
-            }else{this.y -= this.ya}
+            if(v.hascol){
+                this.x += this.xa;
+                if(v.ballcollision(this.x,this.y,this.size)){
+                    this.x -= this.xa;
+                    this.xa *=-0.4;
+                }else{this.x -= this.xa}
+    
+                this.y += this.ya;
+                if(v.ballcollision(this.x,this.y,this.size)){
+                    this.y -= this.ya;
+                    this.ya *=-0.4;
+                }else{this.y -= this.ya}
+            }else{
+                if(v.ballcollision(this.x,this.y,this.size)){
+                    if(v.type=== "checkpoint"){
+                        if(!v.checked){
+                            v.checked = true;
+                            racemanager.r_checkpoints ++;
+                        }
+                    }else if(v.type==="goal"){
+                        racemanager.check_win();
+                    }
+                }
+            }
 
         })
 
@@ -272,65 +298,74 @@ class player{
         
     }
 
-    render(){
+    render(part ="player"){
         
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.arc(camera.x+this.x-this.size/100,camera.y+this.y-this.size/100, this.size, 0,Math.PI*2)
-        ctx.fill();
+        if(part === "text" ){
+            if(this.localplayer){
+                ctx.strokeText("x : "+ Math.round(this.x),10,10)
+                ctx.strokeText("y : "+ Math.round(this.y),10,20)
+                ctx.strokeText("Players online : "+ PLAYERS.length,10,45)
+                ctx.strokeText("Laps : "+ racemanager.laps,10,55)
 
-        if (this.localplayer){
+            }
+        }else{
+            ctx.beginPath();
+            ctx.fillStyle = this.color;
+            ctx.arc(camera.x+this.x-this.size/100,camera.y+this.y-this.size/100, this.size, 0,Math.PI*2)
+            ctx.fill();
+            if (this.localplayer){
+                
+
+
+                // ctx.beginPath();
+                // ctx.lineWidth=3;
+                // ctx.strokeStyle =  "blue"
+                // ctx.moveTo(camera.x+this.x,camera.y+this.y);
+                // ctx.lineTo(camera.x+this.x +(this.xa*this.speed*this.size*5),camera.y+ this.y + (this.ya*this.speed*this.size*5));
+                // ctx.stroke();
+                // ctx.lineWidth=1;
+                
+                ctx.beginPath();
+                ctx.lineWidth=3;
+                ctx.strokeStyle =  "rgb(171, 84, 84)"
+                ctx.moveTo(camera.x+this.x,camera.y+this.y);
+                ctx.lineTo(camera.x+this.x +Math.cos(this.dir)*this.size,camera.y+ this.y + Math.sin(this.dir)*this.size);
+                ctx.stroke();
+                ctx.lineWidth=1;
+                
+            }
             
-            // ctx.beginPath();
-            // ctx.lineWidth=3;
-            // ctx.strokeStyle =  "blue"
-            // ctx.moveTo(camera.x+this.x,camera.y+this.y);
-            // ctx.lineTo(camera.x+this.x +(this.xa*this.speed*this.size*5),camera.y+ this.y + (this.ya*this.speed*this.size*5));
-            // ctx.stroke();
-            // ctx.lineWidth=1;
+    
+            ctx.strokeStyle =  "grey"
+            ctx.strokeText(this.nickname,camera.x+this.x-this.size,camera.y+this.y-this.size-10)
             
             ctx.beginPath();
-            ctx.lineWidth=3;
-            ctx.strokeStyle =  "rgb(171, 84, 84)"
-            ctx.moveTo(camera.x+this.x,camera.y+this.y);
-            ctx.lineTo(camera.x+this.x +Math.cos(this.dir)*this.size,camera.y+ this.y + Math.sin(this.dir)*this.size);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "red";
+            ctx.moveTo(camera.x+this.x-(this.size),camera.y+this.y-(this.size+5));
+            ctx.lineTo(camera.x+this.x-(this.size)+(this.size*2),camera.y+this.y-(this.size+5));
             ctx.stroke();
-            ctx.lineWidth=1;
-
-            ctx.strokeText("x : "+ Math.round(this.x),10,10)
-            ctx.strokeText("y : "+ Math.round(this.y),10,20)
-            ctx.strokeText("Players online : "+ PLAYERS.length,10,45)
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 1;
+            
+            
+            ctx.beginPath();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "green";
+            ctx.moveTo(camera.x+this.x-(this.size),camera.y+this.y-(this.size+5));
+            ctx.lineTo(camera.x+this.x-(this.size)+((this.health/100)*this.size*2),camera.y+this.y-(this.size+5));
+            ctx.stroke();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 1;
 
         }
-
-        ctx.strokeStyle =  "grey"
-        ctx.strokeText(this.nickname,camera.x+this.x-this.size,camera.y+this.y-this.size-10)
-
-        ctx.beginPath();
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "red";
-        ctx.moveTo(camera.x+this.x-(this.size),camera.y+this.y-(this.size+5));
-        ctx.lineTo(camera.x+this.x-(this.size)+(this.size*2),camera.y+this.y-(this.size+5));
-        ctx.stroke();
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 1;
-
-
-        ctx.beginPath();
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "green";
-        ctx.moveTo(camera.x+this.x-(this.size),camera.y+this.y-(this.size+5));
-        ctx.lineTo(camera.x+this.x-(this.size)+((this.health/100)*this.size*2),camera.y+this.y-(this.size+5));
-        ctx.stroke();
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 1;
 
     }
 
     restart(){
 
-        this.x = 0;
-        this.y = 0;
+        this.x = loadedlevel.spawn.x1+this.size;
+        this.y = loadedlevel.spawn.y1+this.size;
         this.xa = 0;
         this.ya = 0;
         this.size = 20;
@@ -341,23 +376,30 @@ class player{
         this.speeda = 0.04;
         camera.x = camera.width/2;
         camera.y = camera.width/2;
+        racemanager.laps =0;
+        racemanager.r_checkpoints =0;
         socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
-        setTimeout(()=>{
-            PLAYERS.forEach(v=>{
-                if (v.localplayer) return;
-                if(distance(this.x,v.x,this.y,v.y) < this.size+v.size){
-                    let xrand = randomrange(-80,80)
-                    let yrand = randomrange(-80,80)
-                    this.x = xrand
-                    this.y = yrand
-                    camera.x -= xrand;
-                    camera.y -= yrand;
+        this.respawn();
 
-                    socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
-                }
-            })
-        },100)
 
+    }
+
+    respawn(){
+
+        this.x = loadedlevel.spawn.x1+this.size;
+        this.y = loadedlevel.spawn.y1+this.size;
+        PLAYERS.forEach(v=>{
+            if (v.localplayer) return;
+            while(distance(this.x,v.x,this.y,v.y) < this.size+v.size){
+                let xrand = randomrange(loadedlevel.spawn.x1+this.size,loadedlevel.spawn.x1+loadedlevel.spawn.x2-this.size)
+                let yrand = randomrange(loadedlevel.spawn.y1+this.size,loadedlevel.spawn.y1+loadedlevel.spawn.y2-this.size)
+                this.x = xrand
+                this.y = yrand
+                socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
+            }
+        })
+        camera.x -= this.x;
+        camera.y -= this.y;
 
     }
     
@@ -436,6 +478,32 @@ const border = {
 
 }
 
+const racemanager = {
+
+    checkpoints:0,
+    r_checkpoints:0,
+    laps:0,
+    setcheckpoints:function(){
+        racemanager.checkpoints = 0;
+        racemanager.r_checkpoints = 0;
+        racemanager.laps=0;
+        loadedlevel.content.forEach((v)=>{
+            if(v.t === "checkpoint"){
+                racemanager.checkpoints++;
+            } 
+        });
+    },
+    check_win:function(){
+        if(racemanager.r_checkpoints === this.checkpoints){
+            racemanager.laps ++;
+            racemanager.r_checkpoints = 0;
+            GAMEOBJECTS.forEach(v=>{if(v.type==="checkpoint"){v.checked = false}})
+        }
+    },
+
+
+}
+
 
 function distance(x1,x2,y1,y2){
     return Math.sqrt(((x2-x1)**2)+((y2-y1)**2));
@@ -467,9 +535,12 @@ PLAYERS.forEach((v)=>v.update())
 function render(){
 ctx.clearRect(0,0,cavas.width,cavas.height);
 
+GAMEOBJECTS.forEach(v=>{v.render("underplayer")});
 PLAYERS.forEach((v)=>v.render());
-GAMEOBJECTS.forEach(v=>{v.render()});
+GAMEOBJECTS.forEach(v=>{v.render("overplayer")});
 border.render();
+PLAYERS.forEach((v)=>v.render("text"));
+
 
 }
 

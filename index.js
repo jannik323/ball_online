@@ -21,8 +21,9 @@ let TYPING_USERRS = [];
 currentlevel = 0;
 const LEVELS = [
 
-  {"content":[{"x":-800,"y":-550,"w":310,"h":80,"t":"platform"},{"x":-300,"y":-800,"w":80,"h":530,"t":"platform"},{"x":-800,"y":-30,"w":560,"h":480,"t":"platform"},{"x":130,"y":-30,"w":320,"h":150,"t":"platform"},{"x":560,"y":-30,"w":240,"h":150,"t":"platform"},{"x":670,"y":120,"w":130,"h":680,"t":"platform"},{"x":470,"y":-480,"w":330,"h":100,"t":"platform"},{"x":30,"y":-480,"w":160,"h":100,"t":"platform"},{"x":-590,"y":-210,"w":40,"h":180,"t":"platform"},{"x":-30,"y":120,"w":160,"h":680,"t":"platform"},{"x":130,"y":120,"w":160,"h":160,"t":"platform"}],"name":"zter"},
+  {"content":[{"x":-800,"y":620,"w":1600,"h":180,"t":"platform"},{"x":-800,"y":-800,"w":190,"h":1420,"t":"platform"},{"x":-610,"y":-800,"w":1410,"h":160,"t":"platform"},{"x":640,"y":-640,"w":160,"h":1260,"t":"platform"},{"x":-270,"y":110,"w":420,"h":180,"t":"platform"},{"x":-610,"y":-640,"w":470,"h":480,"t":"platform"},{"x":150,"y":-290,"w":180,"h":580,"t":"platform"},{"x":-10,"y":290,"w":40,"h":330,"t":"goal"},{"x":330,"y":220,"w":310,"h":40,"t":"checkpoint","e":"0"},{"x":240,"y":-640,"w":40,"h":350,"t":"checkpoint"},{"x":-210,"y":-160,"w":40,"h":270,"t":"checkpoint"}],"spawn":{"x1":30,"x2":120,"y1":290,"y2":330},"name":"racetrack"},
 
+  
 ]
 
 class player{
@@ -44,7 +45,7 @@ class player{
 function changeuserlist(act,id,nick){
 
   if(act === "add"){
-    new player(0,0,id,nick)
+    new player(LEVELS[currentlevel].spawn.x1,LEVELS[currentlevel].spawn.y1,id,nick)
     
     io.emit('userchange', {change:"add",user:id,nickname:nick});
   }else if(act === "remove"){
