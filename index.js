@@ -84,11 +84,17 @@ io.on('connection', (socket) => {
       USERS[userindex].y = data.yc;
       USERS[userindex].xa = data.xa;
       USERS[userindex].ya = data.ya;
+      if(Math.sqrt((data.xa**2)+(data.ya**2)) > 10){
+        socket.disconnect();
+      }
 
       socket.broadcast.emit("move",{user:socket.id,xc:data.xc,yc:data.yc})
     })
 
     socket.on("col", (data)=>{
+      if(Math.sqrt((data.xa**2)+(data.ya**2)) > 10){
+        socket.disconnect();
+      }
       io.to(data.user).emit("col",{xa:data.xa,ya:data.ya});
 
       let collided = USERS[USERS.findIndex((v)=>v.id === data.user)]
@@ -102,7 +108,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on("msg", (msg)=>{
-      if(msg.length < 50){
+      if(msg.length < 80){
         io.emit("msg", socket.nickname + " : " + msg);
       }else{
         socket.emit("system message", "please keep your messages short")
