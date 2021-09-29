@@ -10,17 +10,44 @@
   <body>
 
     <div class="center"> 
+      <div class="col times">
+
+        <div id="bestglobaltime" class="display">
+          Best Time:  <br>  User: 
+        </div>
+        
+
+
+      </div>
+
       <div id="canvas_con">
+        <div class="topbar">
+          <div class="display" id="timerhtml" type="text"  autocomplete=“off”>Current Lap Time: </div>
+          <div class="display" id="besttimehtml" type="text" autocomplete=“off”>Best Lap Time: </div>
+          <div class="display" id="lasttimehtml" type="text" autocomplete=“off”>Last Lap Time: </div>
+        </div>
         <canvas id="canvas"></canvas>
       </div>
+
+      <div class="col">
+
+      <div class="userlist col">
+        <div class="display">
+          Current Players
+        </div>
+        <ul id="userlist" class="col">
+          
+        </ul>
+      </div>
+
       <div class="col chat">
 
-        <form class="row coolimpt" id="nick_form">
-          <input id="nick_input" autocomplete="nickname"> 
+        <form class="row coolimpt" id="nick_form" style="width:80%">
+          <input id="nick_input" style="width:80%" autocomplete="nickname"> 
           <button>Change Nickname</button>
         </form>
 
-        <form class="row coolimpt" id="msg_form">
+        <form class="row coolimpt" id="msg_form" >
           <input id="msg_input" autocomplete="off" > 
           <button> Send </button>
         </form>
@@ -36,6 +63,11 @@
         </ul>
 
       </div>
+
+
+    </div>
+
+
     </div>
 
     

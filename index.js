@@ -26,6 +26,19 @@ const LEVELS = [
   
 ]
 
+const timehandler = {
+
+  besttimes:[
+
+    {user:null,time:Infinity},
+    
+    
+    ],
+  
+
+}
+
+
 class player{
 
   constructor(x,y,id,nick){
@@ -63,6 +76,7 @@ io.on('connection', (socket) => {
     console.log(socket.nickname + " has joined")
     socket.emit('users', USERS);
     socket.emit('level', LEVELS[currentlevel]);
+    socket.emit("times",timehandler.besttimes)
 
     socket.on("move" ,(data)=>{
       let userindex = USERS.findIndex((v)=>v.id === socket.id)
@@ -114,6 +128,14 @@ io.on('connection', (socket) => {
         },3000)
       }
     });
+
+    socket.on("laptime",(time)=>{
+      if(time<timehandler.besttimes[0].time){
+        timehandler.besttimes[0].time = time;
+        timehandler.besttimes[0].user = socket.nickname;
+        io.emit("times",timehandler.besttimes)
+      }
+    })
    
 
     socket.on('disconnect', () => {

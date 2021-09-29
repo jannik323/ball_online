@@ -5,6 +5,7 @@ width: 100%;
 background-color: rgb(45, 45, 45);
 box-sizing: border-box;
 color: rgb(45, 45, 45);;
+font-family:monospace;
 }
 
 canvas#canvas{
@@ -32,18 +33,64 @@ div.center{
     flex-direction: row;
 }
 
-div.chat{
+div.times{
+    box-sizing: border-box;
     height: 500px;
-    width: 300px;
+    width: 200px;
     overflow-x: hidden;
     background-color: aliceblue;
+    margin: 2rem;
+    align-items:center;
+    padding: 1rem;
+    
+}
+
+
+div.chat{
     box-sizing: border-box;
-    margin-left: 2rem;
+    height: 300px;
+    width: 250px;
+    overflow-x: hidden;
+    background-color: aliceblue;
+    margin: 2rem;
     align-items:center;
     justify-content: flex-end;
     flex-direction: column-reverse;
     padding-bottom: 1rem;
     
+}
+
+div.userlist{
+    box-sizing: border-box;
+    height: 200px;
+    width: 250px;
+    background-color: aliceblue;
+    margin: 2rem;
+    margin-bottom: 0;
+    justify-content: start;
+    align-items: left;
+    padding: 1rem;
+    
+}
+
+#userlist{
+    overflow-y: scroll;
+    overflow-x: hidden;
+    height: 100%;
+    width: 88%;
+}
+
+#userlist > li{
+
+    list-style-type:none;
+    margin-bottom: 0.5rem;
+    border: 0.25rem solid rgb(45, 45, 45);
+    background-color:rgb(55, 55, 55);   
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    border-radius: 1rem;
+    color: aliceblue;
+
 }
 
 li.system{
@@ -52,7 +99,7 @@ li.system{
     font-size: 0.75rem;
 }
 
-li{
+div.chat > ul#msgs > li{
     list-style-type:none;
     margin-bottom: 0.5rem;
     border: 0.25rem solid rgb(45, 45, 45);
@@ -62,7 +109,7 @@ li{
     color: aliceblue;
 }
 
-ul{
+#msgs{
     height: 100%;
     overflow-y:scroll;
     overflow-x:hidden;
@@ -118,4 +165,29 @@ ul{
     background-color: rgb(45, 45, 45);
     border-radius: 1rem;
 
+}
+
+div.display{
+    border: 0.25rem solid rgb(81, 81, 81);
+    background-color: rgb(45, 45, 45);
+    border-radius: 1rem;
+    padding: 0.25rem;
+    padding-left: 1rem;
+    color:aliceblue;
+    margin-left: 1rem;
+    font-size: 0.75rem;
+    width: 9rem
+
+}
+
+
+
+.topbar{
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    background-color: aliceblue;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
 }

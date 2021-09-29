@@ -6,6 +6,7 @@ let KEYS = {};
 let loadedlevel = {}
 
 let msgs_html = document.getElementById("msgs");
+let userlist_html = document.getElementById("userlist");
 let TYPINGUSERS_html = document.getElementById('TYPINGUSERS');
 
 let in_chat = false;
@@ -15,8 +16,10 @@ socket.once("users", (USERS)=>{
     USERS.forEach(v=>{
         if(PLAYERS.findIndex((v2)=>v2.id === v.id) === -1){
             new player(v.x,v.y,v.id,v.nickname)
+            makeon_user(v.nickname)
         }
     })
+   
 })
 
 socket.on("level",(level)=>{
@@ -41,16 +44,21 @@ socket.on('userchange', (data)=>{
     if(data.change === "add"){
         if(PLAYERS.findIndex((v)=>v.id === data.user) === -1){
             new player(0,0,data.user,data.nickname);
+            makeon_user(data.nickname)
         }
     }else if(data.change === "remove"){
     PLAYERS.splice(PLAYERS.findIndex((v)=>v.id === data.user),1); 
+    userlist_html.innerHTML = ""
+    PLAYERS.forEach(v=>{makeon_user(v.nickname)})
     }
     
 });
 
 socket.on('nickchange', (data)=>{
 
-    PLAYERS[PLAYERS.findIndex((v)=>v.id === data.user)].nickname = data.nick
+    PLAYERS[PLAYERS.findIndex((v)=>v.id === data.user)].nickname = data.nick;
+    userlist_html.innerHTML = ""
+    PLAYERS.forEach(v=>{makeon_user(v.nickname)})
     
 });
 
@@ -80,10 +88,15 @@ socket.on("dmg", (data)=>{
     PLAYERS[playerindex].health -=data.dmg/2
 })
 
+socket.on("times", (data)=>{
+    document.getElementById("bestglobaltime").innerHTML = "Best Time: "+ racemanager.conv_time(data[0].time) + "\n"+ "Player: "+ data[0].user;
+})
+
 let cavas = document.getElementById("canvas");
 let ctx = cavas.getContext("2d");
 canvas.height = 600;
 canvas.width = 600;
+
 
 class gameobject{
 
@@ -104,16 +117,18 @@ class gameobject{
     render(mode){
 
         if(mode === this.rendermode){
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = this.opac;
-            ctx.strokeStyle = this.strokecolor;
-            ctx.fillStyle = this.fillcolor;
-            ctx.shadowColor = this.shadowcolor;
-            ctx.strokeRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
-            ctx.fillRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = 1;
+            if(this.type !== "goal"){
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = this.opac;
+                ctx.strokeStyle = this.strokecolor;
+                ctx.fillStyle = this.fillcolor;
+                ctx.strokeRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
+                ctx.fillRect(camera.x+this.x,camera.y+this.y,this.width,this.height);
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = 1;
+            }else{
+                drawCheckeredBackground(camera.x+this.x,camera.y+this.y,this.width,this.height,this.fillcolor);
+            }
         }
   
   
@@ -136,27 +151,26 @@ class gameobject{
         this.hascol = true;
         this.rendermode = "overplayer";
         this.opac = 1;
-        this.shadowcolor = "black";
 
         switch(this.type){
             case "platform":
-            this.strokecolor = "black"
-            this.fillcolor = "white";
+            this.strokecolor = "#0c0c0c"
+            this.fillcolor = "#0c0c0c";
             
             break;
 
             case "goal":
-            this.strokecolor = "yellow"
-            this.fillcolor = "yellow";
+            this.strokecolor = "black"
+            this.fillcolor = "grey";
             this.hascol = false;
             this.rendermode = "underplayer";
             break;
 
             case "checkpoint":
             this.strokecolor = "lightblue"
-            this.fillcolor = "lightblue";
+            this.fillcolor = "red";
             this.hascol = false;
-            this.rendermode = "underplayer";
+            this.opac = 0.25;
             this.checked = false;
             break;
 
@@ -218,15 +232,15 @@ class player{
         }
 
         if(KEYS["a"] && !in_chat){
-            this.dira -= 0.01;
+            this.dira -= 0.02;
         }
 
         if(KEYS["d"] && !in_chat){
-            this.dira += 0.01;
+            this.dira += 0.02;
         }
         this.xa *= 0.94;
         this.ya *= 0.94;
-        this.dira *= 0.9;
+        this.dira *= 0.89;
         this.speed *= 0.93;
 
         this.xa += Math.cos(this.dir)*this.speed;
@@ -263,18 +277,22 @@ class player{
                 if(v.ballcollision(this.x,this.y,this.size)){
                     this.x -= this.xa;
                     this.xa *=-0.4;
+                    this.ya *=0.7;
+
                 }else{this.x -= this.xa}
     
                 this.y += this.ya;
                 if(v.ballcollision(this.x,this.y,this.size)){
                     this.y -= this.ya;
                     this.ya *=-0.4;
+                    this.xa *=0.7;
                 }else{this.y -= this.ya}
             }else{
                 if(v.ballcollision(this.x,this.y,this.size)){
                     if(v.type=== "checkpoint"){
                         if(!v.checked){
                             v.checked = true;
+                            v.fillcolor = "green";
                             racemanager.r_checkpoints ++;
                         }
                     }else if(v.type==="goal"){
@@ -302,10 +320,10 @@ class player{
         
         if(part === "text" ){
             if(this.localplayer){
+                ctx.strokeStyle = "grey"
                 ctx.strokeText("x : "+ Math.round(this.x),10,10)
                 ctx.strokeText("y : "+ Math.round(this.y),10,20)
-                ctx.strokeText("Players online : "+ PLAYERS.length,10,45)
-                ctx.strokeText("Laps : "+ racemanager.laps,10,55)
+                ctx.strokeText("Laps : "+ racemanager.laps,10,35)
 
             }
         }else{
@@ -376,9 +394,7 @@ class player{
         this.speeda = 0.04;
         camera.x = camera.width/2;
         camera.y = camera.width/2;
-        racemanager.laps =0;
-        racemanager.r_checkpoints =0;
-        socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
+        racemanager.reset();
         this.respawn();
 
 
@@ -386,8 +402,8 @@ class player{
 
     respawn(){
 
-        this.x = loadedlevel.spawn.x1+this.size;
-        this.y = loadedlevel.spawn.y1+this.size;
+        this.x = (loadedlevel.spawn.x1+loadedlevel.spawn.x1+loadedlevel.spawn.x2)/2;
+        this.y = (loadedlevel.spawn.y1+loadedlevel.spawn.y1+loadedlevel.spawn.y2)/2;
         PLAYERS.forEach(v=>{
             if (v.localplayer) return;
             while(distance(this.x,v.x,this.y,v.y) < this.size+v.size){
@@ -395,11 +411,11 @@ class player{
                 let yrand = randomrange(loadedlevel.spawn.y1+this.size,loadedlevel.spawn.y1+loadedlevel.spawn.y2-this.size)
                 this.x = xrand
                 this.y = yrand
-                socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
             }
         })
         camera.x -= this.x;
         camera.y -= this.y;
+        socket.emit("move", {xc:this.x,yc:this.y,xa:this.xa,ya:this.ya})
 
     }
     
@@ -495,12 +511,42 @@ const racemanager = {
     },
     check_win:function(){
         if(racemanager.r_checkpoints === this.checkpoints){
+            let laptime = Date.now() - racemanager.startdate;
+            racemanager.startdate= Date.now();
+            racemanager.lastlaptime = laptime;
+            racemanager.lasttimehtml.innerHTML ="Last Lap Time: "+ racemanager.conv_time(racemanager.lastlaptime);
             racemanager.laps ++;
             racemanager.r_checkpoints = 0;
-            GAMEOBJECTS.forEach(v=>{if(v.type==="checkpoint"){v.checked = false}})
+            GAMEOBJECTS.forEach(v=>{if(v.type==="checkpoint"){v.checked = false; v.fillcolor = "red";}})
+            if(laptime < racemanager.besttime){
+                racemanager.besttime = laptime
+                racemanager.besttimehtml.innerHTML ="Best Lap Time: "+ racemanager.conv_time(laptime);
+                socket.emit("laptime",laptime);
+            }
+
         }
     },
 
+
+    timerhtml:document.getElementById("timerhtml"),
+    lasttimehtml:document.getElementById("lasttimehtml"),
+    besttimehtml:document.getElementById("besttimehtml"),
+    startdate:Date.now(),
+    lastlaptime:null,
+    besttime:Infinity,
+    rendertime:function(){
+        racemanager.timerhtml.innerHTML ="Current Lap Time: " + racemanager.conv_time(Date.now() - racemanager.startdate);
+        
+    },
+    conv_time:function(ms) {
+        return new Date(ms).toISOString().slice(15, -1);
+    },
+    reset:function(){
+        racemanager.startdate=Date.now();
+        racemanager.laps = 0;
+        racemanager.r_checkpoints = 0;
+        GAMEOBJECTS.forEach(v=>{if(v.type==="checkpoint"){v.checked = false; v.fillcolor = "red";}})        
+    }
 
 }
 
@@ -540,7 +586,7 @@ PLAYERS.forEach((v)=>v.render());
 GAMEOBJECTS.forEach(v=>{v.render("overplayer")});
 border.render();
 PLAYERS.forEach((v)=>v.render("text"));
-
+racemanager.rendertime();
 
 }
 
@@ -553,11 +599,33 @@ function makemsg(msg,system=false){
     msgs_html.scrollTop = msgs_html.scrollHeight;
 }
 
+function makeon_user(user){
+    let item = document.createElement('li');
+    item.textContent = user;
+    userlist_html.appendChild(item);
+    userlist_html.scrollTop = userlist_html.scrollHeight;
+}
+
 function buildcurrentlevel(){
     loadedlevel.content.forEach(v=>{
         new gameobject(v.x,v.y,v.w,v.h,v.t);
     })
 }
+
+function drawCheckeredBackground(x,y,w,h,color) {
+    let nCol = w/8;
+    let nRow = h/8;
+    w /= nCol;            
+    h /= nRow;  
+    ctx.fillStyle = color        
+    for (var i = 0; i < nRow; ++i) {
+        for (var j = 0, col = nCol / 2; j < col; ++j) {
+            ctx.rect(x+(2 * j * w + (i % 2 ? 0 : w)),y+( i * h), w, h);
+        }
+    }
+    ctx.fill();
+}
+
 
 addEventListener("keydown", e => {
     // console.log("key: ",e.key);
@@ -580,8 +648,8 @@ msg_form.addEventListener('submit', function(e) {
             switch(cmd){
 
                 case "players":
-                    let playerdata = PLAYERS.reduce((total,curplayer,i)=>{
-                        return total+ "Player"+i+": "+curplayer.x + "X "+curplayer.y+ "Y ,"  ;
+                    let playerdata = PLAYERS.reduce((total,curplayer)=>{
+                        return total+ +curplayer.nickname+": "+curplayer.x + "X "+curplayer.y+ "Y ,"  ;
                     },"")
                     makemsg(playerdata);
                     break;
@@ -605,7 +673,7 @@ msg_form.addEventListener('submit', function(e) {
                 case "info":
                     makemsg("please enter /help to see info",true);
                     break;
-                case "respawn":
+                case "restart":
                     let playerindex3 = PLAYERS.findIndex((v)=>v.localplayer)
                     PLAYERS[playerindex3].restart();
                     break;
